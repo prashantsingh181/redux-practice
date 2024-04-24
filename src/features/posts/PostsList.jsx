@@ -2,21 +2,28 @@ import { useSelector } from "react-redux";
 import { postsSelector } from "./postsSlice";
 import PostForm from "./PostForm";
 import PostAuthor from "./PostAuthor";
+import TimeAgo from "./TimeAgo";
+import ReactionButtons from "./ReactionButton";
 
 export default function PostsList() {
   const posts = useSelector(postsSelector);
-  const renderedPosts = posts.map((post) => (
+  const orderedPosts = posts.slice().sort((a, b) => b.date.localeCompare(a.date))
+  const renderedPosts = orderedPosts.map((post) => (
     <article
       key={post.id}
       className="border-2 border-blue-800 px-6 py-4 rounded"
     >
-      <h3 className="text-lg font-bold border-b border-b-blue-400">
-        {post.title}
-      </h3>
+      <div className="flex flex-row gap-4 border-b border-b-blue-400 justify-between">
+        <h3 className="text-xl font-bold">
+          {post.title}
+        </h3>
+        <TimeAgo timeStamp={post.date} />
+      </div>
       <p className="text-sm text-cyan-600 mb-2">
         <PostAuthor author={post.author} />
       </p>
       <p>{post.content.substring(0, 100)}</p>
+      <ReactionButtons post={post} />
     </article>
   ));
 

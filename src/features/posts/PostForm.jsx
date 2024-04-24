@@ -47,7 +47,7 @@ const PostForm = () => {
           value={formState.title}
           onChange={handleFormChange}
         />
-        <label htmFor="post-author">Author</label>
+        <label htmlFor="post-author">Author</label>
         <select
           id="post-author"
           name="author"
