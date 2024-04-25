@@ -1,20 +1,30 @@
 import { createSlice, nanoid, createAsyncThunk } from "@reduxjs/toolkit";
-import { sub } from "date-fns";
 import axios from "axios";
+import { formatPostsForUI } from "../../formatters/postsFormatter";
 
 const POSTS_URL = "https://jsonplaceholder.typicode.com/posts";
 
+// initial State
 const initialState = {
   error: null,
-  state: "idle",
+  status: "idle", // idle, loading, succeeded, failed
   posts: [],
 };
 
-const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
+// async actions
+export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
   const response = await axios.get(POSTS_URL);
   return response.data;
 });
+export const createPost = createAsyncThunk(
+  "posts/addPost",
+  async (postInfo) => {
+    const response = await axios.post(POSTS_URL, postInfo);
+    return response.data;
+  }
+);
 
+// slice
 const postsSlice = createSlice({
   name: "posts",
   initialState,
@@ -23,12 +33,12 @@ const postsSlice = createSlice({
       reducer(state, action) {
         state.posts.push(action.payload);
       },
-      prepare(title, content, author) {
+      prepare(title, body, author) {
         return {
           payload: {
             id: nanoid(),
             title,
-            content,
+            body,
             author: Number(author),
             date: new Date().toISOString(),
             reactions: {
@@ -60,8 +70,37 @@ const postsSlice = createSlice({
       },
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchPosts.pending, (state, action) => {
+        state.status = "loading";
+      })
+      .addCase(fetchPosts.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        let min = 1;
+        const loadedPosts = action.payload.map((post) => {
+          return formatPostsForUI(post, min++);
+        });
+
+        // Add any fetched posts to the array
+        state.posts = state.posts.concat(loadedPosts);
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.error.message;
+      })
+      .addCase(createPost.fulfilled, (state, action) => {
+        const formattedPost = formatPostsForUI(action.payload);
+        formattedPost.id = state.posts.length + 1;
+        state.posts.push(formattedPost);
+      });
+  },
 });
 
 export default postsSlice.reducer;
 export const { addPost, addReaction } = postsSlice.actions;
+
+// selectors
 export const postsSelector = (state) => state.posts.posts;
+export const errorSelector = (state) => state.posts.error;
+export const statusSelector = (state) => state.posts.status;

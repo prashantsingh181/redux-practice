@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addPost } from "./postsSlice";
+import { createPost } from "./postsSlice";
 import { usersSelector } from "../users/usersSlice";
 
 const PostForm = () => {
@@ -28,9 +28,18 @@ const PostForm = () => {
 
   function handleFormSubmission(event) {
     event.preventDefault();
-    dispatch(addPost(formState.title, formState.content, formState.author));
+    try {
+      dispatch(
+        createPost({
+          title: formState.title,
+          body: formState.content,
+          userId: formState.author,
+        })
+      ).unwrap();
+    } catch (error) {
+      console.error(error);
+    }
     setFormState({ title: "", content: "", author: "" });
-
   }
   return (
     <section className="my-3">
@@ -68,7 +77,10 @@ const PostForm = () => {
           value={formState.content}
           onChange={handleFormChange}
         ></textarea>
-        <button className="bg-blue-400 py-2 rounded border border-blue-500 disabled:bg-slate-300 disabled:border-slate-500" disabled={Object.values(formState).some(value => !value)}>
+        <button
+          className="bg-blue-400 py-2 rounded border border-blue-500 disabled:bg-slate-300 disabled:border-slate-500"
+          disabled={Object.values(formState).some((value) => !value)}
+        >
           Save
         </button>
       </form>

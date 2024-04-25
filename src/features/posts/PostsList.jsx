@@ -1,37 +1,45 @@
-import { useSelector } from "react-redux";
-import { postsSelector } from "./postsSlice";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  errorSelector,
+  fetchPosts,
+  postsSelector,
+  statusSelector,
+} from "./postsSlice";
 import PostForm from "./PostForm";
-import PostAuthor from "./PostAuthor";
-import TimeAgo from "./TimeAgo";
-import ReactionButtons from "./ReactionButton";
+import Posts from "./Posts";
 
 export default function PostsList() {
+  const dispatch = useDispatch();
+
   const posts = useSelector(postsSelector);
-  const orderedPosts = posts.slice().sort((a, b) => b.date.localeCompare(a.date))
-  const renderedPosts = orderedPosts.map((post) => (
-    <article
-      key={post.id}
-      className="border-2 border-blue-800 px-6 py-4 rounded"
-    >
-      <div className="flex flex-row gap-4 border-b border-b-blue-400 justify-between">
-        <h3 className="text-xl font-bold">
-          {post.title}
-        </h3>
-        <TimeAgo timeStamp={post.date} />
-      </div>
-      <p className="text-sm text-cyan-600 mb-2">
-        <PostAuthor author={post.author} />
-      </p>
-      <p>{post.content.substring(0, 100)}</p>
-      <ReactionButtons post={post} />
-    </article>
-  ));
+  const status = useSelector(statusSelector);
+  const error = useSelector(errorSelector);
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchPosts());
+    }
+  }, [dispatch, status]);
+
+  let content;
+
+  if (status === "loading") {
+    content = <div>Loading...</div>;
+  } else if (status === "succeeded") {
+    const orderedPosts = posts
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    content = orderedPosts.map((post) => <Posts key={post.id} post={post} />);
+  } else if (status === "failed") {
+    content = <div>{error}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-blue-200 text-cyan-800 flex flex-col items-center gap-4 py-10">
       <h2 className="text-2xl font-bold">Posts Component</h2>
       <PostForm />
-      <div className="flex flex-row flex-wrap gap-4">{renderedPosts}</div>
+      <div className="flex flex-col gap-4">{content}</div>
     </div>
   );
 }
